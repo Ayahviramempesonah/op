@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pokemon API</h1>
+    <label for="pet-select">Choose Pokémon:</label>
+    <select id="pet-select"></select>
+    <div id="content-container"></div>
+    <button id="prev-button" disabled>Prev</button>
+    <h2 id="pagination-saat-ini"></h2>
+    <button id="next-button" disabled>Next</button>
+
+    <script>
+        let offset = 0;
+        let limit = 20;
+        let total = 0;
+
+        // Fungsi untuk fetch API dan menampilkan data
+        async function getData() {
+            const url = `https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`; // Endpoint Pokémon
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Response status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+
+                total = data.count;
+
+                // Menampilkan data dalam dropdown
+                const petSelect = document.getElementById("pet-select");
+                petSelect.innerHTML = "";
+                data.results.sort((a, b) => a.name.localeCompare(b.name)).forEach((item) => {
+                    const option = document.createElement("option");
+                    option.value = item.url; // Set URL Pokémon
+                    option.textContent = item.name; // Set nama Pokémon
+                    petSelect.appendChild(option);
+                });
+
+                // Mengatur tombol pagination
+                const prevButton = document.getElementById("prev-button");
+                const nextButton = document.getElementById("next-button");
+                if (offset === 0) {
+                    prevButton.disabled = true;
+                } else {
+                    prevButton.disabled = false;
+                }
+                if (offset + limit >= total) {
+                    nextButton.disabled = true;
+                } else {
+                    nextButton.disabled = false;
+                }
+
+                // Menampilkan pagination saat ini
+                const paginationSaatIni = document.getElementById("pagination-saat-ini");
+                paginationSaatIni.innerHTML = `Halaman ${Math.floor(offset / limit) + 1} dari ${Math.ceil(total / limit)}`;
+
+                // Menambahkan event listener untuk menampilkan detail Pokémon
+                petSelect.addEventListener("change", async (e) => {
+                    const selectedPokemon = e.target.value;
+                    const response = await fetch(selectedPokemon);
+                    const data = await response.json();
+                    console.log(data);
+
+                    // Menampilkan detail Pokémon
+                    const contentContainer = document.getElementById("content-container");
+                    contentContainer.innerHTML = `
+                        <h2>${data.name}</h2>
+                        <p>Height: ${data.height}</p>
+                        <p>Weight: ${data.weight}</p>
+                        <p>Types: ${data.types.map((type) => type.type.name).join(", ")}</p>
+                    `;
+                });
+
+                // Menambahkan event listener untuk tombol pagination
+                prevButton.addEventListener("click", () => {
+                    offset -= limit;
+                    getData();
+                });
+                nextButton.addEventListener("click", () => {
+                    offset += limit;
+                    getData();
+                });
+            } catch (error) {
+                console.error("Error fetching data:", error.message);
+            }
+        }
+
+        // Panggil fungsi fetch API saat halaman selesai dimuat
+        window.onload = getData;
+    </script>
+</body>
+</html>
